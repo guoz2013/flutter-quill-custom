@@ -310,6 +310,7 @@ class RawEditorState extends EditorState
           onSelectionCompleted: _handleSelectionCompleted,
           scrollBottomInset: widget.scrollBottomInset,
           padding: widget.padding,
+          onCaretMoved: widget.onCaretMoved,
           maxContentWidth: widget.maxContentWidth,
           floatingCursorDisabled: widget.floatingCursorDisabled,
           children: _buildChildren(_doc, context),
@@ -348,6 +349,7 @@ class RawEditorState extends EditorState
               onSelectionCompleted: _handleSelectionCompleted,
               scrollBottomInset: widget.scrollBottomInset,
               padding: widget.padding,
+              onCaretMoved: widget.onCaretMoved,
               maxContentWidth: widget.maxContentWidth,
               cursorController: _cursorCont,
               floatingCursorDisabled: widget.floatingCursorDisabled,
@@ -1210,6 +1212,7 @@ class _Editor extends MultiChildRenderObjectWidget {
     this.padding = EdgeInsets.zero,
     this.maxContentWidth,
     this.offset,
+    this.onCaretMoved
   }) : super(key: key, children: children);
 
   final ViewportOffset? offset;
@@ -1227,6 +1230,7 @@ class _Editor extends MultiChildRenderObjectWidget {
   final double? maxContentWidth;
   final CursorCont cursorController;
   final bool floatingCursorDisabled;
+  final Function(Offset offset)? onCaretMoved;
 
   @override
   RenderEditor createRenderObject(BuildContext context) {
@@ -1243,6 +1247,7 @@ class _Editor extends MultiChildRenderObjectWidget {
         onSelectionCompleted: onSelectionCompleted,
         cursorController: cursorController,
         padding: padding,
+        onCaretMoved: onCaretMoved,
         maxContentWidth: maxContentWidth,
         scrollBottomInset: scrollBottomInset,
         floatingCursorDisabled: floatingCursorDisabled);
