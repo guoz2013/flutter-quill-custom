@@ -175,6 +175,7 @@ class QuillEditor extends StatefulWidget {
       this.locale,
       this.floatingCursorDisabled = false,
       this.textSelectionControls,
+      this.onCaretMoved,
       Key? key})
       : super(key: key);
 
@@ -376,6 +377,8 @@ class QuillEditor extends StatefulWidget {
   /// will be used
   final TextSelectionControls? textSelectionControls;
 
+  final Function(Offset offset)? onCaretMoved;
+
   @override
   QuillEditorState createState() => QuillEditorState();
 }
@@ -495,6 +498,7 @@ class QuillEditorState extends State<QuillEditor>
       linkActionPickerDelegate: widget.linkActionPickerDelegate,
       customStyleBuilder: widget.customStyleBuilder,
       floatingCursorDisabled: widget.floatingCursorDisabled,
+      onCaretMoved: widget.onCaretMoved,
     );
 
     final editor = I18n(
@@ -755,7 +759,7 @@ const EdgeInsets _kFloatingCaretSizeIncrease =
 class RenderEditor extends RenderEditableContainerBox
     with RelayoutWhenSystemFontsChangeMixin
     implements RenderAbstractEditor {
-  RenderEditor({
+  RenderEditor( {
     required this.document,
     required TextDirection textDirection,
     required bool hasFocus,
@@ -769,6 +773,7 @@ class RenderEditor extends RenderEditableContainerBox
     required this.onSelectionCompleted,
     required double scrollBottomInset,
     required this.floatingCursorDisabled,
+    this.onCaretMoved,
     ViewportOffset? offset,
     List<RenderEditableBox>? children,
     EdgeInsets floatingCursorAddedMargin =
@@ -791,6 +796,7 @@ class RenderEditor extends RenderEditableContainerBox
   final CursorCont _cursorController;
   final bool floatingCursorDisabled;
   final bool scrollable;
+  final Function(Offset offset)? onCaretMoved;
 
   Document document;
   TextSelection selection;
@@ -838,6 +844,14 @@ class RenderEditor extends RenderEditableContainerBox
   // returns offset relative to this at which the caret will be painted
   // given a global TextPosition
   Offset _getOffsetForCaret(TextPosition position) {
+    final child = childAtPosition(position);
+    final childPosition = child.globalToLocalPosition(position);
+    final boxParentData = child.parentData as BoxParentData;
+    final localOffsetForCaret = child.getOffsetForCaret(childPosition);
+    return boxParentData.offset + localOffsetForCaret;
+  }
+
+  Offset getOffsetForCaret(TextPosition position) {
     final child = childAtPosition(position);
     final childPosition = child.globalToLocalPosition(position);
     final boxParentData = child.parentData as BoxParentData;
@@ -1224,6 +1238,10 @@ class RenderEditor extends RenderEditableContainerBox
         _cursorController.show.value &&
         !_cursorController.style.paintAboveText) {
       _paintFloatingCursor(context, offset);
+    }
+
+    if (onCaretMoved != null) {
+      onCaretMoved!(getOffsetForCaret(selection.base));
     }
     defaultPaint(context, offset);
     _updateSelectionExtentsVisibility(offset + _paintOffset);
@@ -1753,6 +1771,32 @@ class RenderEditableContainerBox extends RenderBox
       child = childAfter(child);
     }
     throw StateError('No child at offset $offset.');
+  }
+
+  double offsetAtTextPosition(TextPosition position) {
+    assert(firstChild != null);
+    resolvePadding();
+    RenderEditableBox targetChild = childAtPosition(position);
+
+    // if (offset.dy <= _resolvedPadding!.top) {
+    //   return firstChild!;
+    // }
+    // if (offset.dy >= size.height - _resolvedPadding!.bottom) {
+    //   return lastChild!;
+    // }
+
+    var child = firstChild;
+    // final dx = -offset.dx;
+    var dy = _resolvedPadding!.top;
+    while (child != null && child != targetChild) {
+      // if (child.size.contains(offset.translate(dx, -dy))) {
+      //   return child;
+      // }
+      dy += child.size.height;
+      child = childAfter(child);
+    }
+    return dy;
+    // throw StateError('No child at offset $offset.');
   }
 
   @override
